@@ -1,0 +1,237 @@
+Space X Falcon 9 First Stage Landing Prediction
+Several examples of an unsuccessful landing are shown here:
+
+Image
+
+Most unsuccessful landings are planed. Space X; performs a controlled landing in the oceans.
+
+Objectives
+Perform exploratory Data Analysis and determine Training Labels
+
+create a column for the class
+Standardize the data
+Split into training data and test data
+-Find best Hyperparameter for SVM, Classification Trees and Logistic Regression
+
+Find the method performs best using test data
+Import Libraries and Define Auxiliary Function
+
+import piplite
+await piplite.install(['numpy'])
+await piplite.install(['pandas'])
+await piplite.install(['seaborn'])
+
+# Pandas is a software library written for the Python programming language for data manipulation and analysis.
+import pandas as pd
+# NumPy is a library for the Python programming language, adding support for large, multi-dimensional arrays and matrices, along with a large collection of high-level mathematical functions to operate on these arrays
+import numpy as np
+# Matplotlib is a plotting library for python and pyplot gives us a MatLab like plotting framework. We will use this in our plotter function to plot data.
+import matplotlib.pyplot as plt
+#Seaborn is a Python data visualization library based on matplotlib. It provides a high-level interface for drawing attractive and informative statistical graphics
+import seaborn as sns
+# Preprocessing allows us to standarsize our data
+from sklearn import preprocessing
+# Allows us to split our data into training and testing data
+from sklearn.model_selection import train_test_split
+# Allows us to test parameters of classification algorithms and find the best one
+from sklearn.model_selection import GridSearchCV
+# Logistic Regression classification algorithm
+from sklearn.linear_model import LogisticRegression
+# Support Vector Machine classification algorithm
+from sklearn.svm import SVC
+# Decision Tree classification algorithm
+from sklearn.tree import DecisionTreeClassifier
+# K Nearest Neighbors classification algorithm
+from sklearn.neighbors import KNeighborsClassifier
+
+
+def plot_confusion_matrix(y,y_predict):
+    "this function plots the confusion matrix"
+    from sklearn.metrics import confusion_matrix
+
+    cm = confusion_matrix(y, y_predict)
+    ax= plt.subplot()
+    sns.heatmap(cm, annot=True, ax = ax); #annot=True to annotate cells
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels')
+    ax.set_title('Confusion Matrix'); 
+    ax.xaxis.set_ticklabels(['did not land', 'land']); ax.yaxis.set_ticklabels(['did not land', 'landed']) 
+    plt.show() 
+
+from js import fetch
+import io
+
+URL1 = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-DS0321EN-SkillsNetwork/datasets/dataset_part_2.csv"
+resp1 = await fetch(URL1)
+text1 = io.BytesIO((await resp1.arrayBuffer()).to_py())
+data = pd.read_csv(text1)
+
+data.head()
+FlightNumber	Date	BoosterVersion	PayloadMass	Orbit	LaunchSite	Outcome	Flights	GridFins	Reused	Legs	LandingPad	Block	ReusedCount	Serial	Longitude	Latitude	Class
+0	1	2010-06-04	Falcon 9	6104.959412	LEO	CCAFS SLC 40	None None	1	False	False	False	NaN	1.0	0	B0003	-80.577366	28.561857	0
+1	2	2012-05-22	Falcon 9	525.000000	LEO	CCAFS SLC 40	None None	1	False	False	False	NaN	1.0	0	B0005	-80.577366	28.561857	0
+2	3	2013-03-01	Falcon 9	677.000000	ISS	CCAFS SLC 40	None None	1	False	False	False	NaN	1.0	0	B0007	-80.577366	28.561857	0
+3	4	2013-09-29	Falcon 9	500.000000	PO	VAFB SLC 4E	False Ocean	1	False	False	False	NaN	1.0	0	B1003	-120.610829	34.632093	0
+4	5	2013-12-03	Falcon 9	3170.000000	GTO	CCAFS SLC 40	None None	1	False	False	False	NaN	1.0	0	B1004	-80.577366	28.561857	0
+
+URL2 = 'https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBM-DS0321EN-SkillsNetwork/datasets/dataset_part_3.csv'
+resp2 = await fetch(URL2)
+text2 = io.BytesIO((await resp2.arrayBuffer()).to_py())
+X = pd.read_csv(text2)
+X.head(100)
+
+FlightNumber	PayloadMass	Flights	Block	ReusedCount	Orbit_ES-L1	Orbit_GEO	Orbit_GTO	Orbit_HEO	Orbit_ISS	...	Serial_B1058	Serial_B1059	Serial_B1060	Serial_B1062	GridFins_False	GridFins_True	Reused_False	Reused_True	Legs_False	Legs_True
+0	1.0	6104.959412	1.0	1.0	0.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0	0.0
+1	2.0	525.000000	1.0	1.0	0.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0	0.0
+2	3.0	677.000000	1.0	1.0	0.0	0.0	0.0	0.0	0.0	1.0	...	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0	0.0
+3	4.0	500.000000	1.0	1.0	0.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0	0.0
+4	5.0	3170.000000	1.0	1.0	0.0	0.0	0.0	1.0	0.0	0.0	...	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0	0.0
+...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...	...
+85	86.0	15400.000000	2.0	5.0	2.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	1.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0
+86	87.0	15400.000000	3.0	5.0	2.0	0.0	0.0	0.0	0.0	0.0	...	1.0	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0
+87	88.0	15400.000000	6.0	5.0	5.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	0.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0
+88	89.0	15400.000000	3.0	5.0	2.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	1.0	0.0	0.0	1.0	0.0	1.0	0.0	1.0
+89	90.0	3681.000000	1.0	5.0	0.0	0.0	0.0	0.0	0.0	0.0	...	0.0	0.0	0.0	1.0	0.0	1.0	1.0	0.0	0.0
+
+# Tarea 1: Crear Y
+Y = data['Class'].to_numpy()
+# Verifica
+print(Y.shape)
+print(Y[:5])
+(90,)
+[0 0 0 0 0]
+
+# students get this 
+transform = preprocessing.StandardScaler()
+X = transform.fit_transform(X)
+print("X shape después de estandarizar:", X.shape)
+X shape después de estandarizar: (90, 83)
+
+# Tarea 3: Split en train/test
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=2)
+print(f"X_train: {X_train.shape}, X_test: {X_test.shape}")
+print(f"Y_train: {Y_train.shape}, Y_test: {Y_test.shape}")
+
+
+
+
+
+
+
+# Tarea 3: Split en train/test
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=2)
+print(f"X_train: {X_train.shape}, X_test: {X_test.shape}")
+print(f"Y_train: {Y_train.shape}, Y_test: {Y_test.shape}")
+X_train: (72, 83), X_test: (18, 83)
+Y_train: (72,), Y_test: (18,)
+Y_test.shape
+(18,)
+parameters ={'C':[0.01,0.1,1],
+             'penalty':['l2'],
+             'solver':['lbfgs']}
+parameters ={"C":[0.01,0.1,1],'penalty':['l2'], 'solver':['lbfgs']}# l1 lasso l2 ridge
+lr=LogisticRegression()
+# Crear GridSearchCV con validación cruzada de 10 folds
+logreg_cv = GridSearchCV(lr, parameters, cv=10)
+logreg_cv.fit(X_train, Y_train)
+
+# Mostrar los mejores parámetros y el score en validación
+print("tuned hyperparameters (best parameters):", logreg_cv.best_params_)
+print("accuracy (best score en validación cruzada):", logreg_cv.best_score_)
+tuned hyperparameters (best parameters): {'C': 0.01, 'penalty': 'l2', 'solver': 'lbfgs'}
+accuracy (best score en validación cruzada): 0.8464285714285713
+
+print("tuned hpyerparameters :(best parameters) ",logreg_cv.best_params_)
+print("accuracy :",logreg_cv.best_score_)
+tuned hpyerparameters :(best parameters)  {'C': 0.01, 'penalty': 'l2', 'solver': 'lbfgs'}
+accuracy : 0.8464285714285713
+
+# Tarea 5: Evaluar en test
+# Predecir sobre X_test
+yhat = logreg_cv.predict(X_test)
+
+# Calcular la exactitud (accuracy) en test
+test_accuracy = logreg_cv.score(X_test, Y_test)
+print("Exactitud en test:", test_accuracy)
+
+# Mostrar la matriz de confusión usando la función que ya tienes
+plot_confusion_matrix(Y_test, yhat)
+Exactitud en test: 0.8333333333333334
+yhat=logreg_cv.predict(X_test)
+plot_confusion_matrix(Y_test,yhat)
+
+Examining the confusion matrix, we see that logistic regression can distinguish between the different classes. We see that the problem is false positives.
+
+Overview:
+
+True Postive - 12 (True label is landed, Predicted label is also landed)
+
+False Postive - 3 (True label is not landed, Predicted label is landed)
+parameters = {'kernel':('linear', 'rbf','poly','rbf', 'sigmoid'),
+              'C': np.logspace(-3, 3, 5),
+              'gamma':np.logspace(-3, 3, 5)}
+svm = SVC()
+svm_cv = GridSearchCV(svm, parameters, cv=10)
+svm_cv.fit(X_train, Y_train)
+print("tuned hpyerparameters :(best parameters) ",svm_cv.best_params_)
+print("accuracy :",svm_cv.best_score_)
+tuned hpyerparameters :(best parameters)  {'C': 1.0, 'gamma': 0.03162277660168379, 'kernel': 'sigmoid'}
+accuracy : 0.8482142857142856
+yhat_svm = svm_cv.predict(X_test)
+print("Exactitud en test SVM:", svm_cv.score(X_test, Y_test))
+plot_confusion_matrix(Y_test, yhat_svm)
+Exactitud en test SVM: 0.8333333333333334
+yhat=svm_cv.predict(X_test)
+plot_confusion_matrix(Y_test,yhat)
+
+parameters = {'criterion': ['gini', 'entropy'],
+     'splitter': ['best', 'random'],
+     'max_depth': [2*n for n in range(1,10)],
+     'max_features': ['auto', 'sqrt'],
+     'min_samples_leaf': [1, 2, 4],
+     'min_samples_split': [2, 5, 10]}
+
+tree = DecisionTreeClassifier()
+# GridSearchCV
+tree_cv = GridSearchCV(tree, parameters, cv=10)
+tree_cv.fit(X_train, Y_train)
+print("tuned hpyerparameters :(best parameters) ",tree_cv.best_params_)
+print("accuracy :",tree_cv.best_score_)
+tuned hpyerparameters :(best parameters)  {'criterion': 'entropy', 'max_depth': 16, 'max_features': 'sqrt', 'min_samples_leaf': 2, 'min_samples_split': 10, 'splitter': 'random'}
+accuracy : 0.8892857142857142
+
+yhat_tree = tree_cv.predict(X_test)
+print("Tree test accuracy:", tree_cv.score(X_test, Y_test))
+plot_confusion_matrix(Y_test, yhat_tree)
+Tree test accuracy: 0.8333333333333334
+
+yhat = tree_cv.predict(X_test)
+plot_confusion_matrix(Y_test,yhat)
+parameters = {'n_neighbors': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+              'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
+              'p': [1,2]}
+
+KNN = KNeighborsClassifier()
+
+# GridSearchCV con 10 folds
+knn_cv = GridSearchCV(KNN, parameters, cv=10)
+knn_cv.fit(X_train, Y_train)
+print("tuned hpyerparameters :(best parameters) ",knn_cv.best_params_)
+print("accuracy :",knn_cv.best_score_)
+tuned hpyerparameters :(best parameters)  {'algorithm': 'auto', 'n_neighbors': 10, 'p': 1}
+accuracy : 0.8482142857142858
+# Tarea 11: Evaluar KNN en test
+yhat_knn = knn_cv.predict(X_test)
+test_accuracy_knn = knn_cv.score(X_test, Y_test)
+print("Exactitud en test (KNN):", test_accuracy_knn)
+
+Exactitud en test (KNN): 0.8333333333333334
+We can plot the confusion matrix
+yhat = knn_cv.predict(X_test)
+plot_confusion_matrix(Y_test,yhat)
+print(X_test.shape[0])
+18
